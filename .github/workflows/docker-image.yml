@@ -43,17 +43,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Login to Docker Hub
+      - name: Login to Aliyun ACR
         uses: docker/login-action@v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/weknora-ui
+          images: ${{ secrets.ACR_REGISTRY }}/novacloud/weknora-ui
 
       - name: Build ui Image
         uses: docker/build-push-action@v7
@@ -68,6 +69,7 @@ jobs:
           cache-to: type=gha,scope=build-ui,mode=max
 
   build-docreader:
+    if: ${{ false }} # Disabled: this deployment only needs app and ui images.
     runs-on: ubuntu-latest
     steps:
       - name: Free Disk Space
@@ -117,6 +119,7 @@ jobs:
           cache-to: type=gha,scope=build-docreader,mode=max
 
   build-sandbox:
+    if: ${{ false }} # Disabled: this deployment only needs app and ui images.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -125,11 +128,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Login to Docker Hub
+      - name: Login to Aliyun ACR
         uses: docker/login-action@v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
       - name: Docker meta
         id: meta
@@ -194,17 +198,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Login to Docker Hub
+      - name: Login to Aliyun ACR
         uses: docker/login-action@v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/weknora-app
+          images: ${{ secrets.ACR_REGISTRY }}/novacloud/weknora-app
 
       - name: Prepare version info
         id: version
@@ -234,9 +239,11 @@ jobs:
             ${{ format('COMMIT_ID_ARG={0}', steps.version.outputs.commit_id) }}
             ${{ format('BUILD_TIME_ARG={0}', steps.version.outputs.build_time) }}
             ${{ format('GO_VERSION_ARG={0}', steps.version.outputs.go_version) }}
+            GOFLAGS_ARG=-p=2
+            GOMAXPROCS_ARG=2
             WITH_ANYDOC=1
           labels: ${{ steps.meta.outputs.labels }}
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/weknora-app
+          tags: ${{ secrets.ACR_REGISTRY }}/novacloud/weknora-app
           cache-from: type=gha,scope=build-app-${{ env.PLATFORM_PAIR }}
           cache-to: type=gha,scope=build-app-${{ env.PLATFORM_PAIR }},mode=max
           outputs: type=image,push-by-digest=true,name-canonical=true,push=true
@@ -267,11 +274,12 @@ jobs:
           pattern: digests-*
           merge-multiple: true
 
-      - name: Login to Docker Hub
+      - name: Login to Aliyun ACR
         uses: docker/login-action@v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -280,14 +288,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/weknora-app
+          images: ${{ secrets.ACR_REGISTRY }}/novacloud/weknora-app
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ secrets.DOCKERHUB_USERNAME }}/weknora-app@sha256:%s ' *)
+            $(printf '${{ secrets.ACR_REGISTRY }}/novacloud/weknora-app@sha256:%s ' *)
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ secrets.DOCKERHUB_USERNAME }}/weknora-app:${{ steps.meta.outputs.version }}
+          docker buildx imagetools inspect ${{ secrets.ACR_REGISTRY }}/novacloud/weknora-app:${{ steps.meta.outputs.version }}

@@ -38,12 +38,16 @@ ARG VERSION_ARG
 ARG COMMIT_ID_ARG
 ARG BUILD_TIME_ARG
 ARG GO_VERSION_ARG
+ARG GOFLAGS_ARG=-p=1
+ARG GOMAXPROCS_ARG=2
 
 # Set build-time variables
 ENV VERSION=${VERSION_ARG}
 ENV COMMIT_ID=${COMMIT_ID_ARG}
 ENV BUILD_TIME=${BUILD_TIME_ARG}
 ENV GO_VERSION=${GO_VERSION_ARG}
+ENV GOFLAGS=${GOFLAGS_ARG}
+ENV GOMAXPROCS=${GOMAXPROCS_ARG}
 
 # Link the anydoc parser engine (office docs converted in-process, no
 # Python docreader). Default on so Hub / compose images ship a working
